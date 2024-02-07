@@ -18,3 +18,4 @@ urllib3==1.26.16
 uvicorn==0.23.2
 ydata-profiling==4.5.1
 nltk==3.8.1
+numpy==1.26.4
