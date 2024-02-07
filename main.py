@@ -109,19 +109,28 @@ def developer(dev_id : str):
 
 #==============================================================
 
-loaded_model = Word2Vec.load("word2vec_model.joblib")
+df = steam_games[['title','keys_vec']]
 
-# Carga el DataFrame modificado
-loaded_df = pd.read_pickle("steam_games_processed.pkl")
+df['keys_vec'] = steam_games.apply(lambda row: list(set(row['tags'] + row['specs'] + row['genres'] )), axis=1)
 
-cosine_similarities = cosine_similarity(list(loaded_df['vector']), list(loaded_df['vector']))
+df = steam_games.loc[:, ('title', 'keys_vec')]
 
+model = Word2Vec(df['keys_vec'], vector_size=400, window=10, min_count=1, workers=5)  
+
+def get_vector_for_list(word_list):
+    vectors = [model.wv[word] for word in word_list if word in model.wv]
+    return sum(vectors) / len(vectors) if vectors else None
+
+
+df['vector'] = df['keys_vec'].apply(get_vector_for_list)
+
+df = df.dropna(subset=['vector'])
+df.reset_index(drop=True, inplace=True)
+
+cosine_similarities = cosine_similarity(list(df['vector']), list(df['vector']))
 
 def get_top_n_recommendations(game_title, n=5):
-
-    cosine_similarities = cosine_similarity(list(loaded_df['vector']), list(loaded_df['vector']))
-
-    game_index = loaded_df.query('title==@game_title').index[0]
+    game_index = df.query('title==@game_title').index[0]
     
     sim_scores = list(enumerate(cosine_similarities[game_index]))
     
@@ -129,10 +138,9 @@ def get_top_n_recommendations(game_title, n=5):
 
     top_n_indices = [i for i, _ in sim_scores[1:n+1]]
 
-    recommended_games = loaded_df['title'].iloc[top_n_indices].tolist()
+    recommended_games = df['title'].iloc[top_n_indices].tolist()
 
     return recommended_games
-
 
 
 @app.get("/Model_Recommendation/")
