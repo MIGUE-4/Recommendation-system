@@ -1,10 +1,10 @@
 FROM python:3.11.7
 
-# WORKDIR /app
-COPY requirements.txt ./
+WORKDIR /code
 
-RUN pip install -r requirements.txt
+COPY . /code/
+# 
 
-ENTRYPOINT uvicorn --host 0.0.0.0 main:app --reload --port 1000
+RUN pip install --no-cache-dir --upgrade -r /code/requirements.txt
 
-COPY . .
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "80"]
